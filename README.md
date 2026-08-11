@@ -23,15 +23,15 @@ Hệ thống được thiết kế linh hoạt với các luồng trao đổi d�
 
 ```mermaid
 graph TD
-    User([📱 Người dùng / App Flutter]) -->|HTTPS / JWT| NetAPI[⚙️ ASP.NET Core Web API (Azure / Self-Hosted)]
-    User -->|HTTPS / JSON| RAGServer[🐍 Python FastAPI RAG Server]
-    User -->|OpenWeatherMap / Open-Meteo| WeatherAPI[🌤️ Weather APIs]
-    User -->|Anthropic REST API| ClaudeAPI[🤖 Anthropic Claude API / OpenAI / Ollama]
-    User -->|Local Inference via llamadart| LocalAI[🧠 GGUF Local SLM (Gemma/SmolLM)]
-    NetAPI -->|Database Queries| SQLDB[(🛢️ SQL Server Database)]
+    User(["📱 Người dùng / App Flutter"]) -->|HTTPS / JWT| NetAPI["⚙️ ASP.NET Core Web API (Azure / Self-Hosted)"]
+    User -->|HTTPS / JSON| RAGServer["🐍 Python FastAPI RAG Server"]
+    User -->|OpenWeatherMap / Open-Meteo| WeatherAPI["🌤️ Weather APIs"]
+    User -->|Anthropic REST API| ClaudeAPI["🤖 Anthropic Claude API / OpenAI / Ollama"]
+    User -->|Local Inference via llamadart| LocalAI["🧠 GGUF Local SLM (Gemma/SmolLM)"]
+    NetAPI -->|Database Queries| SQLDB[("🛢️ SQL Server Database")]
     NetAPI -->|Sync & Webhook Data| RAGServer
-    RAGServer -->|Vector Search| FAISS[(🔍 FAISS Vector Store)]
-    RAGServer -->|LLM Prompting| LLM[🤖 Local / Cloud LLM Model]
+    RAGServer -->|Vector Search| FAISS[("🔍 FAISS Vector Store")]
+    RAGServer -->|LLM Prompting| LLM["🤖 Local / Cloud LLM Model"]
 ```
 
 ### 1. 📱 App Mobile — `tuquanaoAI` (Flutter)
