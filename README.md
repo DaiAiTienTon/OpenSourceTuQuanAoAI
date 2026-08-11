@@ -25,9 +25,9 @@ Hệ thống được thiết kế linh hoạt với các luồng trao đổi d�
 graph TD
     User(["📱 Người dùng / App Flutter"]) -->|HTTPS / JWT| NetAPI["⚙️ ASP.NET Core Web API (Azure / Self-Hosted)"]
     User -->|HTTPS / JSON| RAGServer["🐍 Python FastAPI RAG Server"]
-    User -->|HTTPS Serverless| CFWorker["⚡ Cloudflare Workers AI (Llama 3.1 8B)"]
+    User -->|HTTPS REST API| EvalWorker["⚡ Cloudflare Worker AI (Đánh Giá Trang Phục)"]
+    User -->|HTTPS Serverless| BenchmarkWorker["⚡ Cloudflare Worker AI (Benchmark Llama 3.1 8B)"]
     User -->|OpenWeatherMap / Open-Meteo| WeatherAPI["🌤️ Weather APIs"]
-    User -->|Anthropic REST API| ClaudeAPI["🤖 Anthropic Claude API / OpenAI / Ollama"]
     User -->|Local Inference via llamadart| LocalAI["🧠 GGUF Local SLM (Gemma/SmolLM)"]
     NetAPI -->|Database Queries| SQLDB[("🛢️ SQL Server Database")]
     NetAPI -->|Sync & Webhook Data| RAGServer
@@ -41,7 +41,7 @@ graph TD
   - Giao diện quản lý tủ đồ (thêm/sửa/xóa trang phục, phân loại theo loại đồ, mùa, màu sắc).
   - Tự động lấy vị trí và thông tin thời tiết thực tế tại thời điểm sử dụng.
   - Tích hợp theo dõi sức khỏe (nhịp tim, giờ ngủ) để gợi ý trang phục phù hợp với thể trạng.
-  - Hỗ trợ cả **AI Offline** (chạy SLM trực tiếp trên điện thoại qua `llamadart`) và **AI Online** (thông qua RAG Server, Cloudflare Workers AI hoặc Claude API).
+  - Hỗ trợ cả **AI Offline** (chạy SLM trực tiếp trên điện thoại qua `llamadart`) và **AI Online** (thông qua RAG Server và Cloudflare Workers AI).
 
 ### 2. ⚙️ Backend API — `quan_ly_tu_do_API_one` (ASP.NET Core Web API)
 - **Công nghệ:** .NET 8 Web API, Entity Framework Core, SQL Server, Swagger/OpenAPI, `RagWebhookService`.
@@ -60,7 +60,7 @@ graph TD
 
 ## 🤖 Chi Tiết Tích Hợp AI & Gọi API Trong Mã Nguồn Dart (`tuquanaoAI`)
 
-Ứng dụng Flutter kết hợp linh hoạt giữa **Local AI (Offline)**, **Cloud AI (Anthropic Claude)**, **Cloudflare Workers AI**, **RAG Server (FastAPI)** và **Dịch Vụ Bên Ngoài (Weather & .NET API)**:
+Ứng dụng Flutter kết hợp linh hoạt giữa **Local AI (Offline)**, **Cloudflare Workers AI**, **RAG Server (FastAPI)** và **Dịch Vụ Bên Ngoài (Weather & .NET API)**:
 
 ### 1. 🧠 Chạy AI Offline Đổi Màu Giao Diện (`gemma_theme_service.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/service/gemma_theme_service.dart`
@@ -70,19 +70,18 @@ graph TD
   - Xây dựng **Context theo thời gian thực** (`ThemeContext`): giờ trong ngày, nhiệt độ, tình trạng thời tiết, nhịp tim, giờ ngủ, sở thích cá nhân.
   - Sử dụng cú pháp ràng buộc **GBNF (GGML BNF Grammar)** buộc mô hình chỉ xuất ra định dạng JSON chứa 1 trong 10 bảng màu chuẩn (`ocean`, `forest`, `sunset`, `warm_orange`, `dark_blue`, `lavender`, `mint`, `rose`, `golden_morning`, `rainy_evening`).
 
-### 2. ⚡ Serverless AI Benchmarking Qua Cloudflare Workers AI (`cloud_benchmark_service.dart`)
+### 2. ⚡ Đánh Giá Trang Phục Qua Cloudflare Worker AI (`outfit_eval_viewmodel.dart`)
+- **Vị trí file:** `tuquanaoAI/lib/viewmodels/outfit_eval_viewmodel.dart`
+- **Công nghệ & API:**
+  - Thực hiện gọi trực tiếp tới Cloudflare Worker AI qua HTTP POST (`https://aidanhgia.dtc225180327.workers.dev/`).
+  - **Dữ liệu gửi đi:** Thông tin Áo (`top`), Quần/Váy (`bottom`), Địa điểm (`destination`), Thời tiết (`weather`), và Thể trạng sức khỏe (`health`).
+  - **Kết quả trả về:** Nhận nhận xét đánh giá phối đồ, điểm số phù hợp và đưa ra lời khuyên phong cách từ mô hình AI hosted trên Cloudflare Worker.
+
+### 3. ⚡ Benchmark Serverless AI (`cloud_benchmark_service.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/evaluation/lib/cloud_benchmark_service.dart`
 - **Công nghệ & API:**
-  - Kết nối tới dịch vụ Serverless AI của Cloudflare (**Cloudflare Workers AI**) tại URL worker (`https://raspy-forest-2da0.trantuxvk10.workers.dev/`).
-  - Mô hình Cloud AI sử dụng: **Llama 3.1 8B Instruct FP8** (`@cf/meta/llama-3.1-8b-instruct`).
-  - **Mục đích sử dụng:** Đóng vai trò làm chuẩn đo lường (Benchmark) để so sánh Latency (HTTP round-trip time), Availability (Timeout rate), Palette Accuracy và Chi phí token giữa **Cloud Serverless AI** và **On-device Local SLM**.
-
-### 3. 🤖 Gợi Ý & Đánh Giá Trang Phục Qua Cloud AI (`ai_repository.dart`)
-- **Vị trí file:** `tuquanaoAI/lib/repositories/ai_repository.dart`
-- **Công nghệ & API:**
-  - Kết nối trực tiếp tới REST API của **Anthropic Claude** (`https://api.anthropic.com/v1/messages`) với model `claude-sonnet-4-20250514`.
-  - **`suggestOutfit()`**: Truyền danh sách đồ trong tủ (áo, quần/váy), địa điểm, sức khỏe, thời tiết để Claude AI gợi ý outfit phù hợp nhất kèm giải thích ngắn gọn.
-  - **`evaluateOutfit()`**: Cho phép người dùng chọn 1 combo đồ, gửi sang Claude AI để chấm điểm độ phù hợp (thang điểm 1 - 10) và nhận xét chi tiết về màu sắc, kiểu dáng.
+  - Kết nối tới Cloudflare Worker AI tại `https://raspy-forest-2da0.trantuxvk10.workers.dev/` running **Llama 3.1 8B Instruct FP8**.
+  - **Mục đích:** Đo lường và so sánh hiệu năng (Latency, Availability, Accuracy) giữa **Cloud Serverless AI** và **Local SLM**.
 
 ### 4. ⚡ Hệ Thống RAG Trả Lời Thông Minh (`rag_service.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/service/rag_service.dart`
@@ -103,6 +102,8 @@ graph TD
 - **Công nghệ & API:**
   - Đóng vai trò làm HTTP Client trung tâm kết nối tới **ASP.NET Core 8 Web API** triển khai trên **Azure App Service**.
   - Tự động đính kèm mã xác thực **JWT Bearer Token** vào HTTP Headers (`Authorization: Bearer <token>`) lấy từ `SharedPreferences`.
+
+> 📌 *Ghi chú:* File `ai_repository.dart` trong mã nguồn là interface mẫu chưa sử dụng trong luồng thực tế của ứng dụng.
 
 ---
 
@@ -133,24 +134,24 @@ Dự án **StyleAI** được thiết kế theo kiến trúc **Loose Coupling (K
   static const _baseUrl = 'http://YOUR_LOCAL_IP_OR_DOMAIN:8000';
   ```
 
-### 3. Cloudflare Workers AI & Serverless AI Engine (`cloud_benchmark_service.dart`)
-- **Hiện tại:** Sử dụng **Cloudflare Workers AI** chạy mô hình Serverless `Llama 3.1 8B Instruct FP8`.
+### 3. Cloudflare Worker AI Đánh Giá Trang Phục (`outfit_eval_viewmodel.dart`)
+- **Hiện tại:** Đang kết nối tới Cloudflare Worker `https://aidanhgia.dtc225180327.workers.dev/`.
 - **Các phương án thay thế:**
-  - **Serverless AI Platforms:** Groq API (Latency cực thấp), Together AI, Replicate, Vercel AI SDK, AWS Bedrock.
-  - **Local / Self-hosted Inference:** Chạy mô hình Llama 3.1 qua **Ollama** hoặc **vLLM** trên VPS riêng rồi trả về kết quả qua endpoint REST API.
+  - **Serverless AI Platforms:** OpenAI API (`gpt-4o` / `gpt-4o-mini`), Groq API, Together AI, Replicate, AWS Bedrock.
+  - **Self-Hosted / Local LLM:** Dựng API server với Ollama hoặc VLLM trên máy chủ riêng.
 - **Cách cấu hình lại Endpoint:**
-  Mở tệp `tuquanaoAI/lib/evaluation/lib/cloud_benchmark_service.dart` và thay đổi hằng số `_workerUrl`:
+  Mở tệp `tuquanaoAI/lib/viewmodels/outfit_eval_viewmodel.dart` và thay đổi hằng số `_workerUrl`:
   ```dart
-  static const String _workerUrl = 'https://YOUR_CUSTOM_WORKER_OR_SERVERLESS_ENDPOINT/';
+  static const _workerUrl = 'https://YOUR_CUSTOM_EVALUATION_API_ENDPOINT/';
   ```
 
-### 4. Dịch Vụ AI Nâng Cao & Weather API (External Services)
-- **AI Recommendation Engine (`AIRepositoryImpl`):**
-  - Mặc định sử dụng **Anthropic Claude API** (`claude-sonnet-4-20250514`).
-  - **Thay thế:** Có thể thay thế bằng **OpenAI API** (`gpt-4o` / `gpt-4o-mini`), **Google Gemini API**, **DeepSeek API**, hoặc mô hình mã nguồn mở chạy local/VPS qua **Ollama API** (`http://localhost:11434/v1/chat/completions`).
-- **Dịch Vụ Thời Tiết (`WeatherService`):**
-  - Mặc định tích hợp tự động chuyển đổi giữa **OpenWeatherMap API** và **Open-Meteo API** (Free).
-  - **Thay thế:** Có thể tích hợp thêm các nhà cung cấp như **WeatherAPI.com**, **Tomorrow.io** hoặc **AccuWeather**.
+### 4. Cloudflare Workers AI Benchmark (`cloud_benchmark_service.dart`)
+- **Hiện tại:** Sử dụng **Cloudflare Workers AI** tại `https://raspy-forest-2da0.trantuxvk10.workers.dev/` running `Llama 3.1 8B`.
+- **Cách cấu hình lại Endpoint:**
+  Mở tệp `tuquanaoAI/lib/evaluation/lib/cloud_benchmark_service.dart` và thay đổi `_workerUrl`.
+
+### 5. Dịch Vụ Thời Tiết (`WeatherService`)
+- Mặc định tích hợp tự động chuyển đổi giữa **OpenWeatherMap API** và **Open-Meteo API** (Free). Có thể thay thế bằng **WeatherAPI.com**, **Tomorrow.io** hoặc **AccuWeather**.
 
 ---
 
@@ -160,7 +161,7 @@ Dự án **StyleAI** được thiết kế theo kiến trúc **Loose Coupling (K
 - 🎨 **Giao Diện Động Đổi Màu Theo Thể Trạng (Local AI):** Tự thay đổi màu sắc giao diện theo thời tiết và thể trạng thông qua mô hình SLM nhẹ chạy trực tiếp trên máy.
 - 🌤️ **Gợi Ý Theo Thời Tiết & Thể Trạng:** Tự động điều chỉnh phong cách mặc đồ dựa trên nhiệt độ môi trường, chỉ số nhịp tim và chất lượng giấc ngủ.
 - ⚡ **Offline First & Hybrid AI:** Vẫn chạy được gợi ý outfit cơ bản ngay cả khi không có kết nối internet nhờ mô hình AI nhẹ tích hợp trực tiếp trên điện thoại.
-- 🔍 **RAG Vector Search & Cloud Benchmark:** Kết hợp tìm kiếm vector chính xác cao từ tủ đồ thực tế của người dùng và đo lường so sánh hiệu năng Serverless Cloud AI.
+- 🔍 **RAG Vector Search & AI Outfit Evaluation:** Đánh giá độ phù hợp của trang phục qua Cloudflare Worker AI và gợi ý qua RAG Vector Search.
 
 ---
 
@@ -173,9 +174,9 @@ OpenSourceTuQuanAoAI/
 │   │   ├── api/              # ApiClient kết nối .NET 8 Web API (Azure)
 │   │   ├── core/             # Định nghĩa Theme & Palette màu ứng dụng
 │   │   ├── evaluation/       # CloudBenchmarkService (Cloudflare Workers AI)
-│   │   ├── repositories/     # AIRepository kết nối Anthropic Claude API
+│   │   ├── repositories/     # ai_repository.dart (Interface mẫu)
 │   │   ├── service/          # GemmaThemeService (Local AI), RagService, WeatherService
-│   │   └── viewmodels/       # Provider State Management ViewModels
+│   │   └── viewmodels/       # OutfitEvalViewModel (Cloudflare Worker AI), AuthViewModel, etc.
 │   ├── assets/models/        # Chứa file mô hình AI local (.gguf)
 │   └── pubspec.yaml          # Quản lý thư viện Flutter
 ├── quan_ly_tu_do_API_one/    # ⚙️ ASP.NET Core Backend API
