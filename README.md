@@ -4,49 +4,82 @@
 
 ---
 
-## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
+## 🎨 Tải Mô Hình AI Cho Đổi Màu Sắc & Giao Diện Động (Dynamic Theme)
 
-Hệ thống được chia thành **3 thành phần độc lập** hoạt động phối hợp với nhau:
+Để sử dụng tính năng **tự động thay đổi màu sắc & giao diện động (Dynamic Theme)** dựa trên thể trạng, thời tiết và tâm trạng chạy hoàn toàn **Offline**, bạn có thể tải các file mô hình SLM dạng `.gguf` tại đường dẫn dưới đây:
 
-```mermaid
-graph TD
-    User([📱 Người dùng / App Flutter]) -->|HTTPS / REST API| NetAPI[⚙️ ASP.NET Core Web API]
-    User -->|Local SLM / Inference| LocalAI[🧠 LlamaDart / Gemma Local]
-    NetAPI -->|Database Queries| SQLDB[(🛢️ SQL Server Database)]
-    NetAPI -->|Sync & Webhook Data| RAGServer[🐍 Python FastAPI RAG Server]
-    RAGServer -->|Vector Search| FAISS[(🔍 FAISS Vector Store)]
-    RAGServer -->|LLM Prompting| LLM[🤖 Local / Cloud LLM Model]
-```
+👉 **[Link Tải Mô Hình AI (.gguf) trên Google Drive](https://drive.google.com/drive/folders/1jWAdrrL-bBF8mO-OS0BMY1Pxm898-Hot)**
 
-### 1. 📱 App Mobile — `tuquanaoAI` (Flutter)
-- **Công nghệ:** Flutter SDK, Provider (State Management), `llamadart`, `geolocator`, `shared_preferences`, `http`.
-- **Chức năng:**
-  - Giao diện quản lý tủ đồ (thêm/sửa/xóa trang phục, phân loại theo loại đồ, mùa, màu sắc).
-  - Tự động lấy vị trí và thông tin thời tiết thực tế tại thời điểm sử dụng.
-  - Tích hợp theo dõi sức khỏe (nhịp tim, giờ ngủ) để gợi ý trang phục phù hợp với thể trạng.
-  - Hỗ trợ cả **AI Offline** (chạy SLM trực tiếp trên điện thoại qua `llamadart`) và **AI Online** (thông qua RAG Server).
-
-### 2. ⚙️ Backend API — `quan_ly_tu_do_API_one` (ASP.NET Core Web API)
-- **Công nghệ:** .NET 8 Web API, Entity Framework Core, SQL Server, Swagger/OpenAPI, `RagWebhookService`.
-- **Chức năng:**
-  - Quản lý tài khoản người dùng, đăng ký/đăng nhập & phân quyền.
-  - Quản lý danh mục tủ quần áo (`ClothingItems`), danh sách Outfit (`Outfits`), nhật ký sức khỏe (`HealthLogs`) và sở thích người dùng (`UserPreferences`).
-  - Đồng bộ dữ liệu real-time tới RAG Server qua Webhook Service khi có thay đổi dữ liệu.
-
-### 3. 🧠 RAG & AI Server — `RAG_SERVER_one` (Python FastAPI)
-- **Công nghệ:** Python 3.10+, FastAPI, FAISS Vector Index, SentenceTransformers Embedder, Uvicorn.
-- **Chức năng:**
-  - **Dịch vụ RAG (Retrieval-Augmented Generation):** Truy vấn vector thông tin tủ đồ, sở thích, thể trạng sức khỏe kết hợp với bộ quy tắc phối đồ tĩnh (`fashion_rules.py`).
-  - **Ablation Testing / So sánh dữ liệu:** Cho phép chạy thử nghiệm song song nhiều nguồn dữ liệu (Wardrobe, Preferences, Health, Rules) để đánh giá chất lượng gợi ý.
+### 📥 Hướng dẫn cài đặt mô hình vào ứng dụng:
+1. Tải file mô hình (ví dụ: `SmolLM2-360M-Instruct-Q4_K_M.gguf` hoặc `qwen2.5-0.5b-instruct-q4_k_m.gguf`) từ Google Drive ở trên.
+2. Đặt file vào thư mục: `tuquanaoAI/assets/models/`
+3. Hoặc import trực tiếp từ màn hình **Cài đặt trong ứng dụng** (File được lưu vào thư mục `imported_models/` riêng của thiết bị).
 
 ---
 
-## ✨ Tính Năng Nổi Bật
+## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
+
+```mermaid
+graph TD
+    User([📱 Người dùng / App Flutter]) -->|HTTPS / JWT| NetAPI[⚙️ ASP.NET Core Web API (Azure)]
+    User -->|HTTPS / JSON| RAGServer[🐍 Python FastAPI RAG Server]
+    User -->|OpenWeatherMap / Open-Meteo| WeatherAPI[🌤️ Weather APIs]
+    User -->|Anthropic REST API| ClaudeAPI[🤖 Anthropic Claude API]
+    User -->|Local Inference via llamadart| LocalAI[🧠 GGUF Local SLM (Gemma/SmolLM)]
+    NetAPI -->|Database Queries| SQLDB[(🛢️ SQL Server Database)]
+    NetAPI -->|Webhook Sync| RAGServer
+    RAGServer -->|Vector Search| FAISS[(🔍 FAISS Vector Store)]
+```
+
+---
+
+## 🤖 Chi Tiết Tích Hợp AI & Gọi API Trong Mã Nguồn Dart (`tuquanaoAI`)
+
+Ứng dụng Flutter kết hợp linh hoạt giữa **Local AI (Offline)**, **Cloud AI (Anthropic Claude)**, **RAG Server (FastAPI)** và **Dịch Vụ Bên Ngoài (Weather & .NET API)**:
+
+### 1. 🧠 Chạy AI Offline Đổi Màu Giao Diện (`gemma_theme_service.dart`)
+- **Vị trí file:** `tuquanaoAI/lib/service/gemma_theme_service.dart`
+- **Công nghệ & Cơ chế:** 
+  - Sử dụng thư viện `llamadart` (C++ bindings của `llama.cpp`) chạy trực tiếp file mô hình `.gguf` trên phần cứng điện thoại.
+  - Tự động phát hiện (discover) tất cả các file mô hình `.gguf` trong `assets/models/` hoặc từ bộ nhớ máy (`imported_models/`).
+  - Xây dựng **Context theo thời gian thực** (`ThemeContext`): giờ trong ngày, nhiệt độ, tình trạng thời tiết, nhịp tim, giờ ngủ, sở thích cá nhân.
+  - Sử dụng cú pháp ràng buộc **GBNF (GGML BNF Grammar)** buộc mô hình chỉ xuất ra định dạng JSON chứa 1 trong 10 bảng màu chuẩn (`ocean`, `forest`, `sunset`, `warm_orange`, `dark_blue`, `lavender`, `mint`, `rose`, `golden_morning`, `rainy_evening`).
+
+### 2. 🤖 Gợi Ý & Đánh Giá Trang Phục Qua Cloud AI (`ai_repository.dart`)
+- **Vị trí file:** `tuquanaoAI/lib/repositories/ai_repository.dart`
+- **Công nghệ & API:**
+  - Kết nối trực tiếp tới REST API của **Anthropic Claude** (`https://api.anthropic.com/v1/messages`) với model `claude-sonnet-4-20250514`.
+  - **`suggestOutfit()`**: Truyền danh sách đồ trong tủ (áo, quần/váy), địa điểm, sức khỏe, thời tiết để Claude AI gợi ý outfit phù hợp nhất kèm giải thích ngắn gọn.
+  - **`evaluateOutfit()`**: Cho phép người dùng chọn 1 combo đồ, gửi sang Claude AI để chấm điểm độ phù hợp (thang điểm 1 - 10) và nhận xét chi tiết về màu sắc, kiểu dáng.
+
+### 3. ⚡ Hệ Thống RAG Trả Lời Thông Minh (`rag_service.dart`)
+- **Vị trí file:** `tuquanaoAI/lib/service/rag_service.dart`
+- **Công nghệ & API:**
+  - Kết nối tới **Python FastAPI RAG Server** qua các endpoint `/api/suggest`, `/api/sync`, `/health`.
+  - **`suggestOutfit()`**: Gửi yêu cầu gợi ý có tích hợp tìm kiếm Vector từ kho dữ liệu cá nhân hóa (FAISS) kết hợp bộ quy tắc thời trang tĩnh.
+  - **Cơ chế Tự Động Phục Hồi (Auto-sync & Retry):** Nếu server phản hồi lỗi `404` (chưa có chỉ mục vector), service sẽ tự động kích hoạt `syncUser()` rồi gửi lại yêu cầu gợi ý.
+
+### 4. 🌤️ Dịch Vụ Thời Tiết Hai Nguồn Dữ Liệu (`Weather_service.dart`)
+- **Vị trí file:** `tuquanaoAI/lib/service/Weather_service.dart`
+- **Công nghệ & API:**
+  - Lấy tọa độ thực tế của người dùng qua thư viện `geolocator`.
+  - **Nguồn chính (Primary):** **OpenWeatherMap API** (`api.openweathermap.org`) trả về nhiệt độ, độ ẩm, tốc độ gió và mã thời tiết.
+  - **Nguồn dự phòng (Fallback Auto-switch):** Khi OpenWeatherMap lỗi (hết quota `429` hoặc sai key `401`), dịch vụ tự động chuyển sang **Open-Meteo API** (miễn phí, không cần key) kết hợp **OpenStreetMap Nominatim Reverse Geocoding** để giải mã vị trí thành tên thành phố/quận huyện.
+
+### 5. ⚙️ Quản Lý Kết Nối Backend .NET (`api_client.dart`)
+- **Vị trí file:** `tuquanaoAI/lib/api/api_client.dart`
+- **Công nghệ & API:**
+  - Đóng vai trò làm HTTP Client trung tâm kết nối tới **ASP.NET Core 8 Web API** triển khai trên **Azure App Service**.
+  - Tự động đính kèm mã xác thực **JWT Bearer Token** vào HTTP Headers (`Authorization: Bearer <token>`) lấy từ `SharedPreferences`.
+
+---
+
+## ✨ Summary Tính Năng Hệ Thống
 
 - 👕 **Quản Lý Tủ Đồ Số:** Lưu trữ thông minh danh mục áo, quần, váy, giày dép và phụ kiện.
+- 🎨 **Giao Diện Động Đổi Màu Theo Thể Trạng (Local AI):** Tự thay đổi màu sắc giao diện theo thời tiết và thể trạng thông qua mô hình SLM nhẹ chạy trực tiếp trên máy.
 - 🌤️ **Gợi Ý Theo Thời Tiết & Thể Trạng:** Tự động điều chỉnh phong cách mặc đồ dựa trên nhiệt độ môi trường, chỉ số nhịp tim và chất lượng giấc ngủ.
-- ⚡ **Offline First & Hybrid AI:** Vẫn chạy được gợi ý outfit cơ bản ngay cả khi không có kết nối internet nhờ mô hình AI nhẹ tích hợp trực tiếp trên điện thoại.
-- 🔍 **RAG Thông Minh:** Kết hợp tìm kiếm vector chính xác cao từ tủ đồ thực tế của người dùng thay vì gợi ý chung chung.
+- 🔍 **RAG Vector Search:** Kết hợp tìm kiếm vector chính xác cao từ tủ đồ thực tế của người dùng và bộ quy tắc phối đồ.
 
 ---
 
@@ -55,8 +88,13 @@ graph TD
 ```text
 OpenSourceTuQuanAoAI/
 ├── tuquanaoAI/               # 📱 Ứng dụng Flutter Mobile App
-│   ├── lib/                  # Mã nguồn Dart (Views, ViewModels, Services, Models)
-│   ├── assets/               # Hình ảnh, biểu tượng & mô hình AI nhẹ (.gguf)
+│   ├── lib/
+│   │   ├── api/              # ApiClient kết nối .NET 8 Web API (Azure)
+│   │   ├── core/             # Định nghĩa Theme & Palette màu ứng dụng
+│   │   ├── repositories/     # AIRepository kết nối Anthropic Claude API
+│   │   ├── service/          # GemmaThemeService (Local AI), RagService, WeatherService
+│   │   └── viewmodels/       # Provider State Management ViewModels
+│   ├── assets/models/        # Chứa file mô hình AI local (.gguf)
 │   └── pubspec.yaml          # Quản lý thư viện Flutter
 ├── quan_ly_tu_do_API_one/    # ⚙️ ASP.NET Core Backend API
 │   ├── quan_ly_tu_do_API/    # Controllers, Models, Data (EF Core), Services
@@ -65,7 +103,7 @@ OpenSourceTuQuanAoAI/
 │   ├── main.py               # Entry point FastAPI Server
 │   ├── routers/              # API Endpoints (/api/suggest, /api/sync)
 │   ├── services/             # Vector Store (FAISS), Embedder, LLM Service
-│   └── requirements.txt      # Các thư viện Python cần thiết
+│   └── requirements.txt      # Thư viện Python
 ├── LICENSE                   # Giấy phép nguồn mở MIT
 └── README.md                 # Hướng dẫn chi tiết dự án
 ```
@@ -84,7 +122,7 @@ OpenSourceTuQuanAoAI/
 
 ### 1. Khởi Động Backend API (.NET 8)
 
-1. Mở terminal và di chuyển vào thư mục dự án:
+1. Di chuyển vào thư mục dự án:
    ```bash
    cd quan_ly_tu_do_API_one/quan_ly_tu_do_API
    ```
@@ -99,33 +137,28 @@ OpenSourceTuQuanAoAI/
    dotnet ef database update
    dotnet run
    ```
-   > API Swagger sẽ chạy mặc định tại: `https://localhost:7198/swagger` hoặc `http://localhost:5156/swagger`
 
 ---
 
 ### 2. Khởi Động RAG AI Server (Python FastAPI)
 
-1. Mở terminal và di chuyển vào thư mục RAG Server:
+1. Di chuyển vào thư mục RAG Server:
    ```bash
    cd RAG_SERVER_one
    ```
 2. Tạo và kích hoạt môi trường ảo Python:
    ```bash
    python -m venv venv
-   # Trên Windows:
+   # Windows:
    .\venv\Scripts\activate
-   # Trên Linux/macOS:
+   # Linux/macOS:
    source venv/bin/activate
    ```
-3. Cài đặt các thư viện cần thiết:
+3. Cài đặt thư viện & Khởi chạy server:
    ```bash
    pip install -r requirements.txt
-   ```
-4. Khởi chạy FastAPI Server với Uvicorn:
-   ```bash
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
-   > Tài liệu API Swagger của RAG Server: `http://localhost:8000/docs`
 
 ---
 
@@ -135,36 +168,14 @@ OpenSourceTuQuanAoAI/
    ```bash
    cd tuquanaoAI
    ```
-2. Tải các gói phụ thuộc (Dependencies):
+2. Tải các gói phụ thuộc & Chạy app:
    ```bash
    flutter pub get
-   ```
-3. Kiểm tra thiết bị / trình giả lập kết nối:
-   ```bash
-   flutter devices
-   ```
-4. Chạy ứng dụng:
-   ```bash
    flutter run
    ```
 
 ---
 
-## 📡 Các API Endpoints Chính (RAG Server)
-
-| HTTP Method | Endpoint | Mô Tả |
-|---|---|---|
-| `GET` | `/health` | Kiểm tra trạng thái hoạt động của RAG Server & mô hình LLM |
-| `POST` | `/api/sync` | Đồng bộ dữ liệu người dùng từ .NET Backend vào FAISS Vector Store |
-| `POST` | `/api/suggest` | Tạo gợi ý trang phục RAG dựa trên tủ đồ, sở thích & thời tiết |
-| `POST` | `/api/suggest/compare` | So sánh kết quả gợi ý giữa các nhóm dữ liệu khác nhau (Ablation Test) |
-
----
-
 ## 📜 Giấy Phép (License)
 
-Dự án được phân phối dưới giấy phép **MIT License**. Bạn có thể tự do sử dụng, chỉnh sửa và đóng góp cho cộng đồng. Xem chi tiết tại tệp [LICENSE](LICENSE).
-
----
-
-🤝 **Đóng góp (Contribution):** Mọi ý kiến đóng góp, báo lỗi (Issue) hoặc Pull Request đều được chào đón!
+Dự án được phân phối dưới giấy phép **MIT License**. Xem chi tiết tại tệp [LICENSE](LICENSE).
