@@ -1,0 +1,126 @@
+"""
+services/fashion_rules.py
+
+Tạo index "rules" — kiến thức phối đồ tĩnh (không cần gọi API).
+Đây là bù đắp cho việc không có dữ liệu fashion combination riêng.
+
+Cách dùng:
+    from services.fashion_rules import build_rules_docs
+    docs = build_rules_docs()
+    # docs là list[str], đưa vào build_faiss_index như bình thường
+
+Khi nào cần rebuild:
+    - Chỉ cần build 1 lần lúc startup (hoặc khi update rules).
+    - Không phụ thuộc user_id — dùng chung cho tất cả user.
+    - Trong sync_service, gọi với data_type="rules".
+"""
+from __future__ import annotations
+
+
+# ─── Knowledge base ───────────────────────────────────────────────────────────
+# Viết theo format: câu mô tả ngắn, dễ embed, dễ match với query người dùng.
+
+_COLOR_RULES: list[str] = [
+    "Phối màu 60-30-10: 60% màu chủ đạo, 30% màu phụ, 10% màu nhấn để cân bằng tổng thể",
+    "Màu trung tính đen, trắng, be, xám, navy dễ kết hợp với hầu hết màu khác",
+    "Tránh phối quá 3 màu trong cùng một outfit để không rối mắt",
+    "Monochrome (cùng tông màu, khác độ sáng) tạo vẻ thanh lịch và chỉnh chu",
+    "Màu tương phản (đối diện trên vòng màu) tạo điểm nhấn mạnh: xanh lam + cam, tím + vàng",
+    "Màu sáng (trắng, vàng nhạt, be) phù hợp ngày nắng nóng, phản nhiệt tốt hơn màu tối",
+    "Màu tối (đen, xanh đậm, đỏ đô) phù hợp thời tiết lạnh, tạo cảm giác ấm hơn",
+    "Màu pastel (hồng nhạt, xanh mint, lavender) phù hợp phong cách nhẹ nhàng, mùa xuân hè",
+    "Earth tone (nâu, đất, camel, olive) dễ phối với nhau, phù hợp phong cách minimalist/casual",
+]
+
+_SILHOUETTE_RULES: list[str] = [
+    "Cân bằng form dáng: áo rộng (oversize) + quần slim/skinny; áo slim + quần wide-leg hoặc baggy",
+    "Tránh phối oversize trên với oversize dưới trừ khi có belt hoặc tucked-in để định hình eo",
+    "Skinny top + wide-leg pants là combo trendy, tạo tỉ lệ cân đối tốt",
+    "Áo crop top hoặc tucked-in làm lộ eo, kết hợp tốt với quần high-waist",
+    "Quần ống đứng (straight-leg) phù hợp với hầu hết vóc dáng và phong cách",
+    "Quần wide-leg hoặc palazzo phù hợp với áo ôm, áo sơ mi tucked hoặc áo crop",
+    "Blazer cấu trúc nâng cấp bất kỳ outfit casual nào lên mức lịch sự hơn",
+    "Layer áo khoác ngoài (bomber, trench, puffer) tạo chiều sâu cho outfit mùa lạnh",
+]
+
+_OCCASION_RULES: list[str] = [
+    "Đi làm, công sở: ưu tiên sơ mi, quần âu, blazer, giày da hoặc loafer; tránh đồ quá casual",
+    "Đi học: áo thun, jeans hoặc jogger, sneakers; thoải mái, gọn gàng là trên hết",
+    "Đi chơi cuối tuần: áo thun oversize, shorts vải, bucket hat, sneakers; phong cách casual năng động",
+    "Hẹn hò: áo sơ mi hoặc polo nhẹ nhàng, quần chinos, giày sạch sẽ; chỉnh chu nhưng không cứng nhắc",
+    "Thể thao: áo thể thao thoáng khí, quần jogger hoặc shorts, giày sneakers chuyên thể thao",
+    "Sự kiện đặc biệt, tiệc: áo sơ mi cao cấp hoặc áo blazer, quần âu slim; chú ý giày và phụ kiện",
+    "Ở nhà: đồ thoải mái nhất — hoodie, sweatpants, dép lê; ưu tiên vải mềm mại",
+]
+
+_WEATHER_RULES: list[str] = [
+    "Thời tiết nóng trên 28 độ C: chọn vải linen, cotton mỏng, bamboo; màu sáng; hạn chế polyester",
+    "Thời tiết mát 20-28 độ C: phù hợp mọi loại vải; có thể layering nhẹ như áo jacket mỏng",
+    "Thời tiết lạnh dưới 20 độ C: layering 3 lớp — base layer giữ ấm, mid layer len/hoodie, outer layer áo khoác",
+    "Trời mưa: chọn vải chống nước hoặc áo gió; tránh linen, suede, vải hút nước dễ thấm",
+    "Thời tiết hanh khô: tránh vải tĩnh điện như polyester 100%; ưu tiên cotton, len tự nhiên",
+    "Mùa hè Việt Nam nóng ẩm: thoáng khí quan trọng hơn kiểu dáng; áo rộng hơn thường giúp mát hơn",
+]
+
+_HEALTH_RULES: list[str] = [
+    "Khi mệt mỏi hoặc không khoẻ: ưu tiên trang phục thoải mái, vải mềm mại, không bó sát",
+    "Khi sức khoẻ tốt, năng lượng cao: có thể thử outfit táo bạo hơn, màu sắc rực rỡ hơn",
+    "Khi bị đau khớp hoặc vận động hạn chế: tránh quần skinny bó sát, ưu tiên vải đàn hồi (spandex blend)",
+    "Cân nặng thay đổi: ưu tiên quần có dây thắt lưng điều chỉnh được, hoặc quần elastic waist",
+]
+
+_MATERIAL_RULES: list[str] = [
+    "Cotton: thoáng mát, thấm hút tốt, phù hợp 4 mùa, dễ giặt — vải phổ biến nhất cho thường ngày",
+    "Linen: cực kỳ thoáng mát mùa hè, nhưng dễ nhăn; phù hợp casual và smart casual",
+    "Denim (jeans): bền, đa năng, phù hợp casual đến smart casual; không nên mặc nơi công sở trang trọng",
+    "Polyester: không nhăn, bền màu, nhưng kém thoáng; phù hợp áo khoác, đồ thể thao",
+    "Len (wool, knit): giữ ấm tốt mùa lạnh; sweater len phù hợp casual đến smart casual",
+    "Vải thun (jersey, spandex): co giãn tốt, thoải mái; phù hợp đồ thể thao và casual",
+]
+
+_FOOTWEAR_RULES: list[str] = [
+    "Giày sneakers trắng: universal, hợp với 90% outfit casual và smart casual",
+    "Loafer hoặc Oxford: nâng cấp outfit casual lên mức smart casual, phù hợp công sở nhẹ",
+    "Chunky sneakers kết hợp tốt với quần ống rộng hoặc straight-leg, tạo cân bằng tỉ lệ",
+    "Giày boots (Chelsea, Dr. Martens): phù hợp thời tiết lạnh và phong cách edgy/vintage",
+    "Sandals hoặc dép: chỉ phù hợp casual và đi chơi; tránh công sở và sự kiện trang trọng",
+    "Màu giày nên tương đồng với màu thắt lưng nếu mặc quần có belt để đồng bộ",
+]
+
+_ACCESSORY_RULES: list[str] = [
+    "Đồng hồ dây da: phù hợp công sở và smart casual; tạo vẻ chỉnh chu, trưởng thành",
+    "Đồng hồ dây cao su hoặc metal: phù hợp casual và thể thao",
+    "Mũ cap hoặc bucket hat: phù hợp casual, streetwear, đi chơi ngoài trời",
+    "Tote bag hoặc backpack: phù hợp casual và đi học, đi làm nhẹ; không phù hợp sự kiện",
+    "Kính mắt (gọng tròn, vuông): vừa bảo vệ mắt vừa là phụ kiện thời trang hiệu quả",
+    "Khuyên tai, dây chuyền nhỏ: phụ kiện tinh tế, phù hợp hầu hết phong cách",
+]
+
+_STYLE_GUIDES: list[str] = [
+    "Capsule wardrobe: 10 món cơ bản có thể tạo 30+ outfit: 2 áo trắng, 1 áo đen, 1 sơ mi trắng, 1 jeans, 1 quần đen, 1 bomber, 1 trench, 1 blazer, 2 sneakers",
+    "Minimalist: ít màu, form dáng sạch, chất liệu cao cấp; black-white-grey là base, chọn 1 màu nhấn",
+    "Streetwear: graphic tee, cargo pants, hoodie oversized, chunky sneakers, layer nhiều; màu bold hoặc monochrome",
+    "Smart casual: kết hợp yếu tố formal và casual — jeans + blazer, polo + chinos, sneakers sạch + quần âu",
+    "Vintage / retro: màu earth tone và muted, form rộng, vải texture; áo floral, quần flare, kính retro",
+    "Phong cách Hàn Quốc (K-fashion): tone màu nhẹ (beige, ivory, light grey), form oversized nhẹ, phụ kiện tối giản",
+]
+
+
+# ─── Builder ──────────────────────────────────────────────────────────────────
+
+def build_rules_docs() -> list[str]:
+    """
+    Trả về list[str] gồm toàn bộ quy tắc phối đồ tĩnh.
+    Đưa thẳng vào build_faiss_index().
+    """
+    all_docs: list[str] = []
+    all_docs.extend(_COLOR_RULES)
+    all_docs.extend(_SILHOUETTE_RULES)
+    all_docs.extend(_OCCASION_RULES)
+    all_docs.extend(_WEATHER_RULES)
+    all_docs.extend(_HEALTH_RULES)
+    all_docs.extend(_MATERIAL_RULES)
+    all_docs.extend(_FOOTWEAR_RULES)
+    all_docs.extend(_ACCESSORY_RULES)
+    all_docs.extend(_STYLE_GUIDES)
+    return all_docs

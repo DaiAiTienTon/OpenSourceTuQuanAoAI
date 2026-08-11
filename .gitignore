@@ -1,0 +1,32 @@
+# Python / Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Build Output & Binaries
+**/build/
+.dart_tool/
+*.apk
+*.aab
+*.exe
+*.dll
+
+# Large AI Model Files (>100MB)
+*.gguf
+
+# Node.js
+node_modules/
+
+# IDE & OS Files
+.vs/
+.idea/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
