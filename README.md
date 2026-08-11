@@ -124,6 +124,8 @@ graph TD
   - Kết nối tới Cloudflare Worker AI sử dụng `AppConfig.cloudBenchmarkWorkerUrl` running **Llama 3.1 8B Instruct FP8**.
   - **Mục đích:** Đo lường và so sánh hiệu năng (Latency, Availability, Accuracy) giữa **Cloud Serverless AI** và **Local SLM**.
 
+> 🔬 *Lưu ý về Benchmark:* Các tệp trong thư mục `lib/evaluation/` (`cloud_benchmark_service.dart`, `evaluation_runner.dart`, `consistency_test.dart`...) là các mô-đun nghiên cứu tùy chọn được thiết kế dành riêng cho việc thử nghiệm, đo lường tốc độ/độ chính xác và đánh giá so sánh hiệu năng giữa các mô hình AI (Model Evaluation & Benchmark), không ảnh hưởng đến luồng hoạt động chính của ứng dụng.
+
 ### 4. ⚡ Hệ Thống RAG Trả Lời Thông Minh (`rag_service.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/service/rag_service.dart`
 - **Công nghệ & API:**
