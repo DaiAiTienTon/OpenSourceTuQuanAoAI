@@ -21,10 +21,10 @@
 
 ```mermaid
 graph TD
-    User([📱 Người dùng / App Flutter]) -->|HTTPS / JWT| NetAPI[⚙️ ASP.NET Core Web API (Azure)]
+    User([📱 Người dùng / App Flutter]) -->|HTTPS / JWT| NetAPI[⚙️ ASP.NET Core Web API (Azure/Self-Hosted)]
     User -->|HTTPS / JSON| RAGServer[🐍 Python FastAPI RAG Server]
     User -->|OpenWeatherMap / Open-Meteo| WeatherAPI[🌤️ Weather APIs]
-    User -->|Anthropic REST API| ClaudeAPI[🤖 Anthropic Claude API]
+    User -->|Anthropic REST API| ClaudeAPI[🤖 Anthropic Claude API / OpenAI / Ollama]
     User -->|Local Inference via llamadart| LocalAI[🧠 GGUF Local SLM (Gemma/SmolLM)]
     NetAPI -->|Database Queries| SQLDB[(🛢️ SQL Server Database)]
     NetAPI -->|Webhook Sync| RAGServer
@@ -71,6 +71,43 @@ graph TD
 - **Công nghệ & API:**
   - Đóng vai trò làm HTTP Client trung tâm kết nối tới **ASP.NET Core 8 Web API** triển khai trên **Azure App Service**.
   - Tự động đính kèm mã xác thực **JWT Bearer Token** vào HTTP Headers (`Authorization: Bearer <token>`) lấy từ `SharedPreferences`.
+
+---
+
+## 🌐 Triển Khai Server & Các Dịch Vụ Mở Rộng / Thay Thế (Cloud Deployment & Alternatives)
+
+Dự án **StyleAI** được thiết kế theo kiến trúc **Loose Coupling (Kết nối lỏng lẻo)**. Mặc định mã nguồn sử dụng dịch vụ **Microsoft Azure** và **FastAPI Dev Tunnels**, tuy nhiên người dùng/nhà phát triển hoàn toàn có thể tự do **triển khai hoặc thay thế bằng các hạ tầng Cloud / Self-hosted khác** tùy theo nhu cầu:
+
+### 1. Backend Web API (`quan_ly_tu_do_API_one`)
+- **Hiện tại:** Đang được host trên **Microsoft Azure App Service** (Japan East) và **Azure SQL Database**.
+- **Các phương án thay thế:**
+  - **Cloud Hosting:** AWS (App Runner, Elastic Beanstalk, ECS), Google Cloud Run, Render, Railway, DigitalOcean App Platform, Heroku.
+  - **Self-Hosted / VPS:** Triển khai trên máy chủ riêng (VPS Linux/Windows) sử dụng Docker Container hoặc IIS / Nginx.
+  - **Database Alternative:** Có thể chuyển đổi SQL Azure sang **Microsoft SQL Server cục bộ**, **PostgreSQL** (thông qua `Npgsql.EntityFrameworkCore.PostgreSQL`), **MySQL** hoặc **Supabase**.
+- **Cách cấu hình lại Endpoint trong App Flutter:**
+  Mở tệp `tuquanaoAI/lib/api/api_client.dart` và thay đổi hằng số `_base`:
+  ```dart
+  static const _base = 'https://YOUR_CUSTOM_SERVER_DOMAIN_OR_IP/api';
+  ```
+
+### 2. RAG AI Server (`RAG_SERVER_one`)
+- **Hiện tại:** Chạy Python FastAPI server kết hợp FAISS Vector Store, đang mở cổng qua Dev Tunnels hoặc server riêng.
+- **Các phương án thay thế:**
+  - **Cloud Deployment:** Render, Railway, Fly.io, AWS EC2 / ECS, Google Cloud Run (khuyên dùng các instance hỗ trợ RAM tốt cho Embedder model).
+  - **Local Subnet / LAN:** Chạy trực tiếp `uvicorn main:app --host 0.0.0.0 --port 8000` trên máy tính nội bộ trong cùng mạng Wi-Fi với điện thoại.
+- **Cách cấu hình lại Endpoint trong App Flutter:**
+  Mở tệp `tuquanaoAI/lib/service/rag_service.dart` và thay đổi hằng số `_baseUrl`:
+  ```dart
+  static const _baseUrl = 'http://YOUR_LOCAL_IP_OR_DOMAIN:8000';
+  ```
+
+### 3. Dịch Vụ AI Nâng Cao & Weather API (External Services)
+- **AI Recommendation Engine (`AIRepositoryImpl`):**
+  - Mặc định sử dụng **Anthropic Claude API** (`claude-sonnet-4-20250514`).
+  - **Thay thế:** Có thể thay thế bằng **OpenAI API** (`gpt-4o` / `gpt-4o-mini`), **Google Gemini API**, **DeepSeek API**, hoặc mô hình mã nguồn mở chạy local/VPS qua **Ollama API** (`http://localhost:11434/v1/chat/completions`).
+- **Dịch Vụ Thời Tiết (`WeatherService`):**
+  - Mặc định tích hợp tự động chuyển đổi giữa **OpenWeatherMap API** và **Open-Meteo API** (Free).
+  - **Thay thế:** Có thể tích hợp thêm các nhà cung cấp như **WeatherAPI.com**, **Tomorrow.io** hoặc **AccuWeather**.
 
 ---
 
