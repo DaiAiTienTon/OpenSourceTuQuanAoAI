@@ -19,17 +19,41 @@
 
 ## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
 
+Hệ thống được thiết kế linh hoạt với các luồng trao đổi dữ liệu qua API và Local AI:
+
 ```mermaid
 graph TD
-    User([📱 Người dùng / App Flutter]) -->|HTTPS / JWT| NetAPI[⚙️ ASP.NET Core Web API (Azure/Self-Hosted)]
+    User([📱 Người dùng / App Flutter]) -->|HTTPS / JWT| NetAPI[⚙️ ASP.NET Core Web API (Azure / Self-Hosted)]
     User -->|HTTPS / JSON| RAGServer[🐍 Python FastAPI RAG Server]
     User -->|OpenWeatherMap / Open-Meteo| WeatherAPI[🌤️ Weather APIs]
     User -->|Anthropic REST API| ClaudeAPI[🤖 Anthropic Claude API / OpenAI / Ollama]
     User -->|Local Inference via llamadart| LocalAI[🧠 GGUF Local SLM (Gemma/SmolLM)]
     NetAPI -->|Database Queries| SQLDB[(🛢️ SQL Server Database)]
-    NetAPI -->|Webhook Sync| RAGServer
+    NetAPI -->|Sync & Webhook Data| RAGServer
     RAGServer -->|Vector Search| FAISS[(🔍 FAISS Vector Store)]
+    RAGServer -->|LLM Prompting| LLM[🤖 Local / Cloud LLM Model]
 ```
+
+### 1. 📱 App Mobile — `tuquanaoAI` (Flutter)
+- **Công nghệ:** Flutter SDK, Provider (State Management), `llamadart`, `geolocator`, `shared_preferences`, `http`.
+- **Chức năng:**
+  - Giao diện quản lý tủ đồ (thêm/sửa/xóa trang phục, phân loại theo loại đồ, mùa, màu sắc).
+  - Tự động lấy vị trí và thông tin thời tiết thực tế tại thời điểm sử dụng.
+  - Tích hợp theo dõi sức khỏe (nhịp tim, giờ ngủ) để gợi ý trang phục phù hợp với thể trạng.
+  - Hỗ trợ cả **AI Offline** (chạy SLM trực tiếp trên điện thoại qua `llamadart`) và **AI Online** (thông qua RAG Server / Claude API).
+
+### 2. ⚙️ Backend API — `quan_ly_tu_do_API_one` (ASP.NET Core Web API)
+- **Công nghệ:** .NET 8 Web API, Entity Framework Core, SQL Server, Swagger/OpenAPI, `RagWebhookService`.
+- **Chức năng:**
+  - Quản lý tài khoản người dùng, đăng ký/đăng nhập & phân quyền (JWT Authentication).
+  - Quản lý danh mục tủ quần áo (`ClothingItems`), danh sách Outfit (`Outfits`), nhật ký sức khỏe (`HealthLogs`) và sở thích người dùng (`UserPreferences`).
+  - Đồng bộ dữ liệu real-time tới RAG Server qua Webhook Service khi có thay đổi dữ liệu.
+
+### 3. 🧠 RAG & AI Server — `RAG_SERVER_one` (Python FastAPI)
+- **Công nghệ:** Python 3.10+, FastAPI, FAISS Vector Index, SentenceTransformers Embedder, Uvicorn.
+- **Chức năng:**
+  - **Dịch vụ RAG (Retrieval-Augmented Generation):** Truy vấn vector thông tin tủ đồ, sở thích, thể trạng sức khỏe kết hợp với bộ quy tắc phối đồ tĩnh (`fashion_rules.py`).
+  - **Ablation Testing / So sánh dữ liệu:** Cho phép chạy thử nghiệm song song nhiều nguồn dữ liệu (Wardrobe, Preferences, Health, Rules) để đánh giá chất lượng gợi ý.
 
 ---
 
@@ -111,11 +135,12 @@ Dự án **StyleAI** được thiết kế theo kiến trúc **Loose Coupling (K
 
 ---
 
-## ✨ Summary Tính Năng Hệ Thống
+## ✨ Tính Năng Nổi Bật
 
 - 👕 **Quản Lý Tủ Đồ Số:** Lưu trữ thông minh danh mục áo, quần, váy, giày dép và phụ kiện.
 - 🎨 **Giao Diện Động Đổi Màu Theo Thể Trạng (Local AI):** Tự thay đổi màu sắc giao diện theo thời tiết và thể trạng thông qua mô hình SLM nhẹ chạy trực tiếp trên máy.
 - 🌤️ **Gợi Ý Theo Thời Tiết & Thể Trạng:** Tự động điều chỉnh phong cách mặc đồ dựa trên nhiệt độ môi trường, chỉ số nhịp tim và chất lượng giấc ngủ.
+- ⚡ **Offline First & Hybrid AI:** Vẫn chạy được gợi ý outfit cơ bản ngay cả khi không có kết nối internet nhờ mô hình AI nhẹ tích hợp trực tiếp trên điện thoại.
 - 🔍 **RAG Vector Search:** Kết hợp tìm kiếm vector chính xác cao từ tủ đồ thực tế của người dùng và bộ quy tắc phối đồ.
 
 ---
@@ -174,6 +199,7 @@ OpenSourceTuQuanAoAI/
    dotnet ef database update
    dotnet run
    ```
+   > API Swagger sẽ chạy mặc định tại: `https://localhost:7198/swagger` hoặc `http://localhost:5156/swagger`
 
 ---
 
@@ -196,6 +222,7 @@ OpenSourceTuQuanAoAI/
    pip install -r requirements.txt
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
+   > Tài liệu API Swagger của RAG Server: `http://localhost:8000/docs`
 
 ---
 
@@ -213,6 +240,21 @@ OpenSourceTuQuanAoAI/
 
 ---
 
+## 📡 Các API Endpoints Chính (RAG Server)
+
+| HTTP Method | Endpoint | Mô Tả |
+|---|---|---|
+| `GET` | `/health` | Kiểm tra trạng thái hoạt động của RAG Server & mô hình LLM |
+| `POST` | `/api/sync` | Đồng bộ dữ liệu người dùng từ .NET Backend vào FAISS Vector Store |
+| `POST` | `/api/suggest` | Tạo gợi ý trang phục RAG dựa trên tủ đồ, sở thích & thời tiết |
+| `POST` | `/api/suggest/compare` | So sánh kết quả gợi ý giữa các nhóm dữ liệu khác nhau (Ablation Test) |
+
+---
+
 ## 📜 Giấy Phép (License)
 
-Dự án được phân phối dưới giấy phép **MIT License**. Xem chi tiết tại tệp [LICENSE](LICENSE).
+Dự án được phân phối dưới giấy phép **MIT License**. Bạn có thể tự do sử dụng, chỉnh sửa và đóng góp cho cộng đồng. Xem chi tiết tại tệp [LICENSE](LICENSE).
+
+---
+
+🤝 **Đóng góp (Contribution):** Mọi ý kiến đóng góp, báo lỗi (Issue) hoặc Pull Request đều được chào đón!
