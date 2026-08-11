@@ -39,9 +39,11 @@ enum WeatherSource { openWeatherMap, openMeteo }
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
+import '../core/app_config.dart';
+
 class WeatherService extends ChangeNotifier {
   // ── OpenWeatherMap ────────────────────────────────────────────────────
-  static const _owmApiKey = '10f5aac429c5c505d55955c02eee780e';
+  static const _owmApiKey = AppConfig.openWeatherMapApiKey;
   static const _owmBaseUrl = 'https://api.openweathermap.org/data/2.5/weather';
 
   // ── Open-Meteo (miễn phí, không cần API key) ──────────────────────────

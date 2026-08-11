@@ -8,10 +8,12 @@ import '../service/ai_history_service.dart';
 import '../viewmodels/health_viewmodel.dart';
 import '../viewmodels/Ai_History_viewmodel.dart';
 
+import '../core/app_config.dart';
+
 enum EvalState { idle, loading, success, error }
 
 class OutfitEvalViewModel extends ChangeNotifier {
-  static const _workerUrl = 'https://aidanhgia.dtc225180327.workers.dev/';
+  static const _workerUrl = AppConfig.outfitEvalWorkerUrl;
 
   final WeatherService _weatherService;
   final HealthViewModel _healthViewModel;

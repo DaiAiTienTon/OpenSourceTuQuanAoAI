@@ -17,6 +17,47 @@
 
 ---
 
+## 🔒 Bảo Mật & Quản Lý API Keys / Config Tương Ứng Ở Mỗi Thư Mục
+
+Toàn bộ API Keys, thông tin kết nối Database và Endpoint riêng tư đều được ẩn/tách biệt khỏi mã nguồn và quản lý qua các file cấu hình tương ứng ở từng thư mục:
+
+### 1. 📱 App Flutter (`tuquanaoAI`)
+Quản lý tập trung tại tệp: `tuquanaoAI/lib/core/app_config.dart`
+```dart
+class AppConfig {
+  static const String dotnetApiBaseUrl = 'https://YOUR_DOTNET_API_DOMAIN/api';
+  static const String ragServerBaseUrl = 'https://YOUR_RAG_SERVER_URL';
+  static const String ragApiKey = 'YOUR_RAG_SECRET_KEY';
+  static const String outfitEvalWorkerUrl = 'https://YOUR_EVALUATION_WORKER_URL';
+  static const String openWeatherMapApiKey = 'YOUR_OPENWEATHERMAP_API_KEY';
+}
+```
+
+### 2. ⚙️ .NET Web API (`quan_ly_tu_do_API_one`)
+Cấu hình mẫu tại `appsettings.Example.json`. Thiết lập riêng tại `quan_ly_tu_do_API_one/quan_ly_tu_do_API/appsettings.json`:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=YOUR_SERVER;Database=QuanLyTuDoDb;User ID=YOUR_USER;Password=YOUR_PASSWORD;..."
+  },
+  "Rag": {
+    "BaseUrl": "https://YOUR_RAG_SERVER_URL",
+    "ApiKey": "YOUR_RAG_SECRET_KEY"
+  }
+}
+```
+
+### 3. 🧠 Python FastAPI RAG Server (`RAG_SERVER_one`)
+Cấu hình mẫu tại `.env.example`. Thiết lập riêng tại `RAG_SERVER_one/.env`:
+```env
+API_BASE_URL=https://YOUR_DOTNET_API_DOMAIN
+RAG_API_KEY=YOUR_RAG_SECRET_KEY
+LLM_MODEL_PATH=./models/gemma-3-1b-it-bf16.gguf
+PORT=8000
+```
+
+---
+
 ## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
 
 Hệ thống được thiết kế linh hoạt với các luồng trao đổi dữ liệu qua API, Cloudflare Workers AI và Local AI:
@@ -73,20 +114,20 @@ graph TD
 ### 2. ⚡ Đánh Giá Trang Phục Qua Cloudflare Worker AI (`outfit_eval_viewmodel.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/viewmodels/outfit_eval_viewmodel.dart`
 - **Công nghệ & API:**
-  - Thực hiện gọi trực tiếp tới Cloudflare Worker AI qua HTTP POST (`https://aidanhgia.dtc225180327.workers.dev/`).
+  - Thực hiện gọi tới Cloudflare Worker AI qua HTTP POST sử dụng hằng số `AppConfig.outfitEvalWorkerUrl`.
   - **Dữ liệu gửi đi:** Thông tin Áo (`top`), Quần/Váy (`bottom`), Địa điểm (`destination`), Thời tiết (`weather`), và Thể trạng sức khỏe (`health`).
   - **Kết quả trả về:** Nhận nhận xét đánh giá phối đồ, điểm số phù hợp và đưa ra lời khuyên phong cách từ mô hình AI hosted trên Cloudflare Worker.
 
 ### 3. ⚡ Benchmark Serverless AI (`cloud_benchmark_service.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/evaluation/lib/cloud_benchmark_service.dart`
 - **Công nghệ & API:**
-  - Kết nối tới Cloudflare Worker AI tại `https://raspy-forest-2da0.trantuxvk10.workers.dev/` running **Llama 3.1 8B Instruct FP8**.
+  - Kết nối tới Cloudflare Worker AI sử dụng `AppConfig.cloudBenchmarkWorkerUrl` running **Llama 3.1 8B Instruct FP8**.
   - **Mục đích:** Đo lường và so sánh hiệu năng (Latency, Availability, Accuracy) giữa **Cloud Serverless AI** và **Local SLM**.
 
 ### 4. ⚡ Hệ Thống RAG Trả Lời Thông Minh (`rag_service.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/service/rag_service.dart`
 - **Công nghệ & API:**
-  - Kết nối tới **Python FastAPI RAG Server** qua các endpoint `/api/suggest`, `/api/sync`, `/health`.
+  - Kết nối tới **Python FastAPI RAG Server** qua `AppConfig.ragServerBaseUrl` và `AppConfig.ragApiKey`.
   - **`suggestOutfit()`**: Gửi yêu cầu gợi ý có tích hợp tìm kiếm Vector từ kho dữ liệu cá nhân hóa (FAISS) kết hợp bộ quy tắc thời trang tĩnh.
   - **Cơ chế Tự Động Phục Hồi (Auto-sync & Retry):** Nếu server phản hồi lỗi `404` (chưa có chỉ mục vector), service sẽ tự động kích hoạt `syncUser()` rồi gửi lại yêu cầu gợi ý.
 
@@ -94,13 +135,13 @@ graph TD
 - **Vị trí file:** `tuquanaoAI/lib/service/Weather_service.dart`
 - **Công nghệ & API:**
   - Lấy tọa độ thực tế của người dùng qua thư viện `geolocator`.
-  - **Nguồn chính (Primary):** **OpenWeatherMap API** (`api.openweathermap.org`) trả về nhiệt độ, độ ẩm, tốc độ gió và mã thời tiết.
+  - **Nguồn chính (Primary):** **OpenWeatherMap API** (`api.openweathermap.org`) sử dụng `AppConfig.openWeatherMapApiKey`.
   - **Nguồn dự phòng (Fallback Auto-switch):** Khi OpenWeatherMap lỗi (hết quota `429` hoặc sai key `401`), dịch vụ tự động chuyển sang **Open-Meteo API** (miễn phí, không cần key) kết hợp **OpenStreetMap Nominatim Reverse Geocoding** để giải mã vị trí thành tên thành phố/quận huyện.
 
 ### 6. ⚙️ Quản Lý Kết Nối Backend .NET (`api_client.dart`)
 - **Vị trí file:** `tuquanaoAI/lib/api/api_client.dart`
 - **Công nghệ & API:**
-  - Đóng vai trò làm HTTP Client trung tâm kết nối tới **ASP.NET Core 8 Web API** triển khai trên **Azure App Service**.
+  - Đóng vai trò làm HTTP Client trung tâm kết nối tới **ASP.NET Core 8 Web API** qua `AppConfig.dotnetApiBaseUrl`.
   - Tự động đính kèm mã xác thực **JWT Bearer Token** vào HTTP Headers (`Authorization: Bearer <token>`) lấy từ `SharedPreferences`.
 
 > 📌 *Ghi chú:* File `ai_repository.dart` trong mã nguồn là interface mẫu chưa sử dụng trong luồng thực tế của ứng dụng.
@@ -109,48 +150,31 @@ graph TD
 
 ## 🌐 Triển Khai Server & Các Dịch Vụ Mở Rộng / Thay Thế (Cloud Deployment & Alternatives)
 
-Dự án **StyleAI** được thiết kế theo kiến trúc **Loose Coupling (Kết nối lỏng lẻo)**. Mặc định mã nguồn sử dụng dịch vụ **Microsoft Azure**, **Cloudflare Workers AI** và **FastAPI Dev Tunnels**, tuy nhiên người dùng/nhà phát triển hoàn toàn có thể tự do **triển khai hoặc thay thế bằng các hạ tầng Cloud / Self-hosted khác** tùy theo nhu cầu:
+Dự án **StyleAI** được thiết kế theo kiến trúc **Loose Coupling (Kết nối lỏng lẻo)**. Người dùng/nhà phát triển hoàn toàn có thể tự do **triển khai hoặc thay thế bằng các hạ tầng Cloud / Self-hosted khác** tùy theo nhu cầu:
 
 ### 1. Backend Web API (`quan_ly_tu_do_API_one`)
-- **Hiện tại:** Đang được host trên **Microsoft Azure App Service** (Japan East) và **Azure SQL Database**.
 - **Các phương án thay thế:**
-  - **Cloud Hosting:** AWS (App Runner, Elastic Beanstalk, ECS), Google Cloud Run, Render, Railway, DigitalOcean App Platform, Heroku.
+  - **Cloud Hosting:** AWS (App Runner, Elastic Beanstalk, ECS), Google Cloud Run, Microsoft Azure, Render, Railway, DigitalOcean App Platform, Heroku.
   - **Self-Hosted / VPS:** Triển khai trên máy chủ riêng (VPS Linux/Windows) sử dụng Docker Container hoặc IIS / Nginx.
   - **Database Alternative:** Có thể chuyển đổi SQL Azure sang **Microsoft SQL Server cục bộ**, **PostgreSQL** (thông qua `Npgsql.EntityFrameworkCore.PostgreSQL`), **MySQL** hoặc **Supabase**.
 - **Cách cấu hình lại Endpoint trong App Flutter:**
-  Mở tệp `tuquanaoAI/lib/api/api_client.dart` và thay đổi hằng số `_base`:
-  ```dart
-  static const _base = 'https://YOUR_CUSTOM_SERVER_DOMAIN_OR_IP/api';
-  ```
+  Chỉnh sửa `AppConfig.dotnetApiBaseUrl` trong `tuquanaoAI/lib/core/app_config.dart`.
 
 ### 2. RAG AI Server (`RAG_SERVER_one`)
-- **Hiện tại:** Chạy Python FastAPI server kết hợp FAISS Vector Store, đang mở cổng qua Dev Tunnels hoặc server riêng.
 - **Các phương án thay thế:**
   - **Cloud Deployment:** Render, Railway, Fly.io, AWS EC2 / ECS, Google Cloud Run (khuyên dùng các instance hỗ trợ RAM tốt cho Embedder model).
   - **Local Subnet / LAN:** Chạy trực tiếp `uvicorn main:app --host 0.0.0.0 --port 8000` trên máy tính nội bộ trong cùng mạng Wi-Fi với điện thoại.
 - **Cách cấu hình lại Endpoint trong App Flutter:**
-  Mở tệp `tuquanaoAI/lib/service/rag_service.dart` và thay đổi hằng số `_baseUrl`:
-  ```dart
-  static const _baseUrl = 'http://YOUR_LOCAL_IP_OR_DOMAIN:8000';
-  ```
+  Chỉnh sửa `AppConfig.ragServerBaseUrl` và `AppConfig.ragApiKey` trong `tuquanaoAI/lib/core/app_config.dart`.
 
 ### 3. Cloudflare Worker AI Đánh Giá Trang Phục (`outfit_eval_viewmodel.dart`)
-- **Hiện tại:** Đang kết nối tới Cloudflare Worker `https://aidanhgia.dtc225180327.workers.dev/`.
 - **Các phương án thay thế:**
   - **Serverless AI Platforms:** OpenAI API (`gpt-4o` / `gpt-4o-mini`), Groq API, Together AI, Replicate, AWS Bedrock.
   - **Self-Hosted / Local LLM:** Dựng API server với Ollama hoặc VLLM trên máy chủ riêng.
 - **Cách cấu hình lại Endpoint:**
-  Mở tệp `tuquanaoAI/lib/viewmodels/outfit_eval_viewmodel.dart` và thay đổi hằng số `_workerUrl`:
-  ```dart
-  static const _workerUrl = 'https://YOUR_CUSTOM_EVALUATION_API_ENDPOINT/';
-  ```
+  Chỉnh sửa `AppConfig.outfitEvalWorkerUrl` trong `tuquanaoAI/lib/core/app_config.dart`.
 
-### 4. Cloudflare Workers AI Benchmark (`cloud_benchmark_service.dart`)
-- **Hiện tại:** Sử dụng **Cloudflare Workers AI** tại `https://raspy-forest-2da0.trantuxvk10.workers.dev/` running `Llama 3.1 8B`.
-- **Cách cấu hình lại Endpoint:**
-  Mở tệp `tuquanaoAI/lib/evaluation/lib/cloud_benchmark_service.dart` và thay đổi `_workerUrl`.
-
-### 5. Dịch Vụ Thời Tiết (`WeatherService`)
+### 4. Dịch Vụ Thời Tiết (`WeatherService`)
 - Mặc định tích hợp tự động chuyển đổi giữa **OpenWeatherMap API** và **Open-Meteo API** (Free). Có thể thay thế bằng **WeatherAPI.com**, **Tomorrow.io** hoặc **AccuWeather**.
 
 ---
@@ -171,8 +195,8 @@ Dự án **StyleAI** được thiết kế theo kiến trúc **Loose Coupling (K
 OpenSourceTuQuanAoAI/
 ├── tuquanaoAI/               # 📱 Ứng dụng Flutter Mobile App
 │   ├── lib/
-│   │   ├── api/              # ApiClient kết nối .NET 8 Web API (Azure)
-│   │   ├── core/             # Định nghĩa Theme & Palette màu ứng dụng
+│   │   ├── api/              # ApiClient kết nối .NET 8 Web API
+│   │   ├── core/             # AppConfig (Quản lý API Keys/URLs), Theme & Palette
 │   │   ├── evaluation/       # CloudBenchmarkService (Cloudflare Workers AI)
 │   │   ├── repositories/     # ai_repository.dart (Interface mẫu)
 │   │   ├── service/          # GemmaThemeService (Local AI), RagService, WeatherService
@@ -180,10 +204,11 @@ OpenSourceTuQuanAoAI/
 │   ├── assets/models/        # Chứa file mô hình AI local (.gguf)
 │   └── pubspec.yaml          # Quản lý thư viện Flutter
 ├── quan_ly_tu_do_API_one/    # ⚙️ ASP.NET Core Backend API
-│   ├── quan_ly_tu_do_API/    # Controllers, Models, Data (EF Core), Services
+│   ├── quan_ly_tu_do_API/    # Controllers, Models, Data (EF Core), appsettings.Example.json
 │   └── quan_ly_tu_do_API.sln # Solution file
 ├── RAG_SERVER_one/           # 🧠 Python FastAPI RAG Server
 │   ├── main.py               # Entry point FastAPI Server
+│   ├── .env.example          # Mẫu môi trường API Key & Config
 │   ├── routers/              # API Endpoints (/api/suggest, /api/sync)
 │   ├── services/             # Vector Store (FAISS), Embedder, LLM Service
 │   └── requirements.txt      # Thư viện Python
@@ -209,10 +234,10 @@ OpenSourceTuQuanAoAI/
    ```bash
    cd quan_ly_tu_do_API_one/quan_ly_tu_do_API
    ```
-2. Cấu hình chuỗi kết nối SQL Server trong `appsettings.json`:
+2. Tạo tệp `appsettings.json` từ `appsettings.Example.json` và cấu hình kết nối SQL Server & RAG Key:
    ```json
    "ConnectionStrings": {
-     "DefaultConnection": "Server=YOUR_SERVER;Database=QuanLyTuDoDb;Trusted_Connection=True;TrustServerCertificate=True;"
+     "DefaultConnection": "Server=YOUR_SERVER;Database=QuanLyTuDoDb;User ID=YOUR_USER;Password=YOUR_PASSWORD;Trusted_Connection=False;Encrypt=True;TrustServerCertificate=True;"
    }
    ```
 3. Cập nhật Database & Khởi chạy server:
@@ -230,16 +255,18 @@ OpenSourceTuQuanAoAI/
    ```bash
    cd RAG_SERVER_one
    ```
-2. Tạo và kích hoạt môi trường ảo Python:
+2. Tạo tệp `.env` từ `.env.example` và thiết lập các biến môi trường bí mật:
+   ```env
+   API_BASE_URL=http://localhost:5156
+   RAG_API_KEY=YOUR_RAG_SECRET_KEY
+   ```
+3. Tạo môi trường ảo, cài đặt thư viện & Khởi chạy server:
    ```bash
    python -m venv venv
    # Windows:
    .\venv\Scripts\activate
    # Linux/macOS:
    source venv/bin/activate
-   ```
-3. Cài đặt thư viện & Khởi chạy server:
-   ```bash
    pip install -r requirements.txt
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
@@ -253,7 +280,8 @@ OpenSourceTuQuanAoAI/
    ```bash
    cd tuquanaoAI
    ```
-2. Tải các gói phụ thuộc & Chạy app:
+2. Cấu hình các API Key và URL Server tại `lib/core/app_config.dart`.
+3. Tải các gói phụ thuộc & Chạy app:
    ```bash
    flutter pub get
    flutter run

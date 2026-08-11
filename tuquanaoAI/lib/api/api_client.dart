@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_config.dart';
+
 class ApiClient {
-  static const _base =
-      'https://quanlytudoapi20260505151646-gmd8hgcag6hkdkfr.japaneast-01.azurewebsites.net/api';
+  static const _base = AppConfig.dotnetApiBaseUrl;
 
   // ── Token storage ────────────────────────────────────────────────────
   static Future<String?> getToken() async =>

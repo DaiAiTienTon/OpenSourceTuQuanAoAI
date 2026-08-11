@@ -17,10 +17,11 @@ import 'package:http/http.dart' as http;
 import 'package:tuquanapai/core/app_dynamic_theme.dart';
 import 'test_dataset.dart';
 
+import 'package:tuquanapai/core/app_config.dart';
+
 class CloudBenchmarkService {
   // Thay bằng URL worker thực của bạn
-  static const String _workerUrl =
-      'https://raspy-forest-2da0.trantuxvk10.workers.dev/';
+  static const String _workerUrl = AppConfig.cloudBenchmarkWorkerUrl;
 
   static const Duration _timeout = Duration(seconds: 30);
   static const int _totalRuns = 1; // Cloud đắt hơn → chỉ 1 run mỗi case

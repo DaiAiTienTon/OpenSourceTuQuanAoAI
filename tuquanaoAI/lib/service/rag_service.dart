@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../core/app_config.dart';
+
 /// Service gọi RAG Fashion Assistant Server
 class RagService {
-  static const _baseUrl = 'https://2rhspc3c-8000.asse.devtunnels.ms';
-  static const _apiKey = 'my-secret-key-123';
+  static const _baseUrl = AppConfig.ragServerBaseUrl;
+  static const _apiKey = AppConfig.ragApiKey;
 
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
