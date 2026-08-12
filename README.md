@@ -56,7 +56,7 @@ RAG_API_KEY=YOUR_RAG_SECRET_KEY
 LLM_MODEL_PATH=./models/gemma-3-1b-it-bf16.gguf
 PORT=8000
 ```
-
+### Lưu ý: bạn sẽ phải tự tải model LLM mà mình muốn, chỉ hỗ trợ các model đã được lượng tử hoá.
 ---
 
 ## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
