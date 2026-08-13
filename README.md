@@ -15,6 +15,7 @@
 2. Đặt file vào thư mục: `tuquanaoAI/assets/models/`
 3. Hoặc import trực tiếp từ màn hình **Cài đặt trong ứng dụng** (File được lưu vào thư mục `imported_models/` riêng của thiết bị).
 
+### lưu ý rằng file .APK là phiên bản sử dụng dữ liệu riêng của tôi, nếu bạn không muôn sử dụng thì chỉ cần tải mỗi các model .gguf 
 ---
 
 ## 🔒 Bảo Mật & Quản Lý API Keys / Config Tương Ứng Ở Mỗi Thư Mục
@@ -55,7 +56,7 @@ RAG_API_KEY=YOUR_RAG_SECRET_KEY
 LLM_MODEL_PATH=./models/gemma-3-1b-it-bf16.gguf
 PORT=8000
 ```
-
+### Lưu ý: bạn sẽ phải tự tải model LLM mà mình muốn, chỉ hỗ trợ các model đã được lượng tử hoá.
 ---
 
 ## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
