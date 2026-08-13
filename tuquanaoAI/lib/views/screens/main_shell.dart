@@ -163,10 +163,12 @@ class _MainShellState extends State<MainShell> {
                   children: [
                     const _AppHeader(),
                     Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
-                        child: _buildContent(),
-                      ),
+                      child: _tabIndex == 2
+                          ? _buildContent()
+                          : SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                              child: _buildContent(),
+                            ),
                     ),
                   ],
                 ),

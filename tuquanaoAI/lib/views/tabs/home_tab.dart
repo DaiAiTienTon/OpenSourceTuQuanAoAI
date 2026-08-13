@@ -259,55 +259,62 @@ class _WeatherCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '📍 ${w.city.toUpperCase()} · HÔM NAY',
-                style: TextStyle(
-                    fontSize: 10,
-                    color: t.textSecondary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                w.tempDisplay,
-                style: TextStyle(
-                    fontSize: 44,
-                    fontWeight: FontWeight.w900,
-                    color: t.primaryDark,
-                    letterSpacing: -1,
-                    height: 1.1),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Text(
-                    w.icon,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    w.description,
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: t.primaryDark,
-                        fontWeight: FontWeight.w800),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${w.humidityDisplay} · ${w.windDisplay}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: t.textMuted,
-                  fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '📍 ${w.city.toUpperCase()} · HÔM NAY',
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: t.textSecondary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  w.tempDisplay,
+                  style: TextStyle(
+                      fontSize: 44,
+                      fontWeight: FontWeight.w900,
+                      color: t.primaryDark,
+                      letterSpacing: -1,
+                      height: 1.1),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      w.icon,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        w.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: t.primaryDark,
+                            fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${w.humidityDisplay} · ${w.windDisplay}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: t.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
           Column(
             children: [
               Text(w.icon, style: const TextStyle(fontSize: 56)),
@@ -397,21 +404,23 @@ class _QuickEvalButtonState extends State<_QuickEvalButton> {
                 child: const Text('👗', style: TextStyle(fontSize: 20)),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Đánh giá trang phục',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: t.primaryDark),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Chọn bộ đồ có sẵn và nhận nhận xét từ AI',
-                    style: TextStyle(fontSize: 11.5, color: t.textSecondary, fontWeight: FontWeight.w600),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Đánh giá trang phục',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: t.primaryDark),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Chọn bộ đồ có sẵn và nhận nhận xét từ AI',
+                      style: TextStyle(fontSize: 11.5, color: t.textSecondary, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Text('→', style: TextStyle(fontSize: 18, color: t.primary, fontWeight: FontWeight.bold)),
             ],
           ),

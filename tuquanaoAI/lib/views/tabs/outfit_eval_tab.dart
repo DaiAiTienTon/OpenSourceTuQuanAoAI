@@ -85,18 +85,26 @@ class OutfitEvalTab extends StatelessWidget {
                   children: [
                     const Text('👕', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 4),
-                    Text(
-                      vm.selectedTop!.name,
-                      style: TextStyle(fontSize: 13.5, color: t.primaryDark, fontWeight: FontWeight.w800),
+                    Flexible(
+                      child: Text(
+                        vm.selectedTop!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 13.5, color: t.primaryDark, fontWeight: FontWeight.w800),
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text('·', style: TextStyle(color: t.textSecondary, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     const Text('👖', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 4),
-                    Text(
-                      vm.selectedBottom!.name,
-                      style: TextStyle(fontSize: 13.5, color: t.primaryDark, fontWeight: FontWeight.w800),
+                    Flexible(
+                      child: Text(
+                        vm.selectedBottom!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 13.5, color: t.primaryDark, fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ],
                 ),

@@ -39,75 +39,65 @@ class _HistoryTabState extends State<HistoryTab>
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Tab selector ───────────────────────────────────────────────────
-        Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: t.borderColor.withOpacity(0.4), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: t.primary.withOpacity(0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: TabBar(
-            controller: _tabController,
-            labelStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 0.2),
-            unselectedLabelStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-            labelColor: t.primaryDark,
-            unselectedLabelColor: t.textMuted,
-            indicator: BoxDecoration(
-              color: t.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: t.primary.withOpacity(0.15), width: 1),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Tab selector ───────────────────────────────────────────────────
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.92),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: t.borderColor.withOpacity(0.4), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: t.primary.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            indicatorSize: TabBarIndicatorSize.tab,
-            dividerColor: Colors.transparent,
-            padding: const EdgeInsets.all(4),
-            tabs: const [
-              Tab(text: '✨ Gợi ý AI'),
-              Tab(text: '🌸 Đánh giá AI'),
-            ],
-          ),
-        ),
-
-        // ── Tab content ────────────────────────────────────────────────────
-        // THAY TOÀN BỘ phần SizedBox + TabBarView:
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final availableHeight = MediaQuery.of(context).size.height
-                - MediaQuery.of(context).padding.top
-                - MediaQuery.of(context).padding.bottom
-                - kBottomNavigationBarHeight
-                - 56   // _AppHeader height
-                - 60   // TabBar + margin
-                - 28;  // padding của SingleChildScrollView (14*2)
-            return SizedBox(
-              height: availableHeight,
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _SuggestionHistoryList(
-                    expandedId: _expandedSuggestId,
-                    onExpand: (id) => setState(() => _expandedSuggestId = id),
-                  ),
-                  _EvaluationHistoryList(
-                    expandedId: _expandedEvalId,
-                    onExpand: (id) => setState(() => _expandedEvalId = id),
-                  ),
-                ],
+            child: TabBar(
+              controller: _tabController,
+              labelStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 0.2),
+              unselectedLabelStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+              labelColor: t.primaryDark,
+              unselectedLabelColor: t.textMuted,
+              indicator: BoxDecoration(
+                color: t.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: t.primary.withOpacity(0.15), width: 1),
               ),
-            );
-          },
-        ),
-      ],
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              padding: const EdgeInsets.all(4),
+              tabs: const [
+                Tab(text: '✨ Gợi ý AI'),
+                Tab(text: '🌸 Đánh giá AI'),
+              ],
+            ),
+          ),
+
+          // ── Tab content ────────────────────────────────────────────────────
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _SuggestionHistoryList(
+                  expandedId: _expandedSuggestId,
+                  onExpand: (id) => setState(() => _expandedSuggestId = id),
+                ),
+                _EvaluationHistoryList(
+                  expandedId: _expandedEvalId,
+                  onExpand: (id) => setState(() => _expandedEvalId = id),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

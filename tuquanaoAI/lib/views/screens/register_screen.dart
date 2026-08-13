@@ -513,9 +513,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Container(
         decoration: BoxDecoration(gradient: t.appGradient),
         child: SafeArea(
-          bottom: false,
           child: Center(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Container(
                 padding: const EdgeInsets.all(28),

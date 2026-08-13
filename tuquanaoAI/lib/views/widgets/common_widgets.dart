@@ -148,24 +148,32 @@ class ItemChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : t.textMuted,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : t.textMuted,
+                ),
               ),
             ),
             if (subLabel != null) ...[
               const SizedBox(width: 4),
-              Text(
-                subLabel!,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: selected
-                      ? Colors.white70
-                      : t.textMuted.withOpacity(0.6),
+              Flexible(
+                child: Text(
+                  subLabel!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: selected
+                        ? Colors.white70
+                        : t.textMuted.withOpacity(0.6),
+                  ),
                 ),
               ),
             ],
@@ -229,13 +237,18 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                       ],
               ),
               child: Center(
-                child: Text(
-                  widget.label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14.5,
-                    letterSpacing: 0.5,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ),
@@ -273,20 +286,25 @@ class _SecondaryButtonState extends State<SecondaryButton> {
         scale: _scale,
         duration: const Duration(milliseconds: 100),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.9),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: t.borderColor.withOpacity(0.8), width: 1.2),
           ),
           child: Center(
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                color: t.primary,
-                letterSpacing: 0.2,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                widget.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: t.primary,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ),
@@ -328,12 +346,17 @@ class _DangerButtonState extends State<DangerButton> {
             border: Border.all(color: const Color(0xFFE07070).withOpacity(0.3), width: 1.2),
           ),
           child: Center(
-            child: Text(
-              widget.label,
-              style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFE07070),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                widget.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFE07070),
+                ),
               ),
             ),
           ),

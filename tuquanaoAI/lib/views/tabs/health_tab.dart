@@ -139,7 +139,7 @@ class _HealthTabState extends State<HealthTab> {
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 1.4,
+          childAspectRatio: 1.3,
           children: _fields.map((f) {
             final value = _getValue(vm, f['key'] as String);
             final fieldColor = Color(f['color'] as int);
@@ -166,7 +166,7 @@ class _HealthTabState extends State<HealthTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(f['icon'] as String, style: const TextStyle(fontSize: 24)),
+                      Text(f['icon'] as String, style: const TextStyle(fontSize: 22)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -185,24 +185,24 @@ class _HealthTabState extends State<HealthTab> {
                     ],
                   ),
                   const Spacer(),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        value.isEmpty ? '--' : value,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: t.primaryDark,
-                          letterSpacing: -0.5,
-                        ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value.isEmpty ? '--' : value,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: t.primaryDark,
+                        letterSpacing: -0.5,
                       ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     f['label'] as String,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 11,
                       color: t.textSecondary,
@@ -212,6 +212,8 @@ class _HealthTabState extends State<HealthTab> {
                   ),
                   Text(
                     'Bình thường: ${f['normal']}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 9.5,
                       color: t.textMuted.withOpacity(0.75),

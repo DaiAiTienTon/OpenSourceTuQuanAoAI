@@ -270,12 +270,15 @@ class _ProfileTabState extends State<ProfileTab> {
         // ── Basic Info Card ───────────────────────────────────────────────
         AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Thông tin cơ bản',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: t.primaryDark, fontSize: 14.5)),
-              Text('Tên và ngày sinh dùng để cá nhân hoá trải nghiệm',
-                  style: TextStyle(fontSize: 11.5, color: t.textSecondary)),
-            ]),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Thông tin cơ bản',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: t.primaryDark, fontSize: 14.5)),
+                Text('Tên và ngày sinh dùng để cá nhân hoá trải nghiệm',
+                    style: TextStyle(fontSize: 11.5, color: t.textSecondary)),
+              ]),
+            ),
+            const SizedBox(width: 8),
             GestureDetector(
               onTap: () {
                 if (vm.isEditing) {
@@ -349,8 +352,16 @@ class _ProfileTabState extends State<ProfileTab> {
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text(row[0],
                       style: TextStyle(fontSize: 12.5, color: t.textSecondary, fontWeight: FontWeight.w700)),
-                  Text(row[1],
-                      style: TextStyle(fontSize: 13.5, color: t.primaryDark, fontWeight: FontWeight.w800)),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      row[1],
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13.5, color: t.primaryDark, fontWeight: FontWeight.w800),
+                    ),
+                  ),
                 ]),
               ),
           ],
@@ -359,12 +370,15 @@ class _ProfileTabState extends State<ProfileTab> {
         // ── Hobbies Card ──────────────────────────────────────────────────
         AppCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('💖 Sở thích cá nhân',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: t.primaryDark, fontSize: 14.5)),
-              Text('AI dùng sở thích để điều chỉnh phong cách gợi ý',
-                  style: TextStyle(fontSize: 11.5, color: t.textSecondary)),
-            ]),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('💖 Sở thích cá nhân',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: t.primaryDark, fontSize: 14.5)),
+                Text('AI dùng sở thích để điều chỉnh phong cách gợi ý',
+                    style: TextStyle(fontSize: 11.5, color: t.textSecondary)),
+              ]),
+            ),
+            const SizedBox(width: 8),
             GestureDetector(
               onTap: () => context.read<ProfileViewModel>().setAddingHobby(true),
               child: Container(
@@ -535,9 +549,13 @@ class _HobbyChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 12.5, color: t.primaryDark, fontWeight: FontWeight.w700),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12.5, color: t.primaryDark, fontWeight: FontWeight.w700),
+            ),
           ),
           const SizedBox(width: 8),
           GestureDetector(
